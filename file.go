@@ -3,7 +3,6 @@ package tools
 import (
 	"io/ioutil"
 	"os"
-	"syscall"
 )
 
 //remove file return false if failed.
@@ -33,9 +32,11 @@ func FileExists(path string) bool {
 
 //create dir.
 func CreateDir(path string, mode os.FileMode) error {
-	mask := syscall.Umask(0x000)
-	defer syscall.Umask(mask)
-	return os.MkdirAll(path, mode)
+	err := os.MkdirAll(path, mode)
+	if err == nil {
+		err = os.Chmod(path, mode)
+	}
+	return err
 }
 
 //create dir if not exists.

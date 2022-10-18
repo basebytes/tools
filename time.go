@@ -8,10 +8,12 @@ import (
 )
 
 const (
-	dateFormat           = "2006-01-02"
-	datetimeFormat       = "2006-01-02 15:04:05"
-	maxTime              = "23h59m59s"
-	day            int64 = 24 * 60 * 60
+	dateFormat              = "2006-01-02"
+	compactDateFormat       = "20060102"
+	compactTimeFormat       = "150405"
+	datetimeFormat          = "2006-01-02 15:04:05"
+	maxTime                 = "23h59m59s"
+	day               int64 = 24 * 60 * 60
 )
 
 var (
@@ -21,7 +23,7 @@ var (
 	data       = [2]int64{}
 )
 
-// return the seconds representation of the current date in local
+// CurrentDateInSeconds return the seconds representation of the current date in local
 func CurrentDateInSeconds() int64 {
 	if time.Now().Unix() > data[idx]+day {
 		lock.Lock()
@@ -34,7 +36,7 @@ func CurrentDateInSeconds() int64 {
 	return data[idx]
 }
 
-//return the seconds representation of the start of days before now in local
+// DaysBefore return the seconds representation of the start of days before now in local
 func DaysBefore(days int) int64 {
 	cur := CurrentDateInSeconds()
 	return cur - int64(days)*day
@@ -46,7 +48,7 @@ func init() {
 	data[1] = data[0] + day
 }
 
-//Trans time format from hh:mm:ss to hhhmmmsss.If timeString format invalid return itself
+// TransTimeFormat Trans time format from hh:mm:ss to hhhmmmsss.If timeString format invalid return itself
 //
 //eg. 23:10:34 => 23h10m34s
 func TransTimeFormat(timeString string) string {
@@ -56,23 +58,42 @@ func TransTimeFormat(timeString string) string {
 	return timeRegexp.ReplaceAllString(timeString, "${1}h${2}m${3}s")
 }
 
-//return the seconds representation of the timeString
+// GetTimeInSeconds return the seconds representation of the timeString
 //
-//timeString in format hhhmmmsss ,eg. 23h10m34s ,otherwise return -1
-func GetTimeInSeconds(timeString string) int64 {
+//timeStr in format hhhmmmsss ,e.g. 23h10m34s ,otherwise return -1
+func GetTimeInSeconds(timeStr string) int64 {
 	var result int64 = -1
-	if d, e := time.ParseDuration(timeString); e == nil {
+	if d, e := time.ParseDuration(timeStr); e == nil {
 		result = d.Milliseconds() / 1e3
 	}
 	return result
 }
 
-//return current datetime in format yyyy-MM-dd HH:mm:ss
-func CurrentTimeStr() string {
-	return time.Now().Format(datetimeFormat)
+// CurrentDateTimeStr return current datetime in format yyyy-MM-dd HH:mm:ss
+func CurrentDateTimeStr() string {
+	return formatCurrentTime(datetimeFormat)
 }
 
-//return time ring from days ago util next day.
+// CurrentDateStr return current date in format yyyy-MM-dd
+func CurrentDateStr() string {
+	return formatCurrentTime(dateFormat)
+}
+
+// CurrentDataCompactStr return current date in format yyyyMMdd
+func CurrentDataCompactStr() string {
+	return formatCurrentTime(compactDateFormat)
+}
+
+// CurrentTimeCompactStr return current time in format HHmmss
+func CurrentTimeCompactStr() string {
+	return formatCurrentTime(compactTimeFormat)
+}
+
+func formatCurrentTime(format string) string {
+	return time.Now().Format(format)
+}
+
+//TimeRingFromDaysAgo return time ring from days ago util next day.
 func TimeRingFromDaysAgo(days int) *ring.Ring {
 	timeRing := ring.New(days + 2)
 	cur := timeRing
@@ -83,7 +104,7 @@ func TimeRingFromDaysAgo(days int) *ring.Ring {
 	return timeRing
 }
 
-//return unix timestamp in seconds with two part:begin of a day and the offset
+//SplitSeconds return unix timestamp in seconds with two part:begin of a day and the offset
 func SplitSeconds(seconds int64) (int64, int64) {
 	dayStart := CurrentDateInSeconds()
 	offset := seconds - dayStart
