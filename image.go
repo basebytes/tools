@@ -2,12 +2,13 @@ package tools
 
 import (
 	"bytes"
-	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	"image/jpeg"
 	"io/ioutil"
 	"os"
+	
+	"github.com/nfnt/resize"
 )
 
 const (
@@ -205,6 +206,7 @@ func Float32Round(f float32, pOffset int64) float32 {
 	}
 	return float32(int64(f*pa_fix+0.5)) / pa_fix
 }
+
 //func ImageHashPrint(a uint64) {
 //	msg := ""
 //	for i := uint64(0); i < 8; i++ {

@@ -3,10 +3,11 @@ package tools
 import (
 	"encoding/json"
 	"os"
+	"regexp"
 )
 
-//deserialize file content.
-func DecodeFile(file string, v interface{}) error {
+// DecodeFile deserialize file content.
+func DecodeFile(file string, v any) error {
 	filePtr, err := os.Open(file)
 	if err != nil {
 		return err
@@ -16,8 +17,8 @@ func DecodeFile(file string, v interface{}) error {
 	return decoder.Decode(&v)
 }
 
-//serialize object to file.
-func EncodeObj(v interface{}, file string) error {
+// EncodeObj serialize object to file.
+func EncodeObj(v any, file string) error {
 	filePtr, err := os.Create(file)
 	if err != nil {
 		return err
@@ -27,23 +28,37 @@ func EncodeObj(v interface{}, file string) error {
 	return encoder.Encode(&v)
 }
 
-//deserialize
-func Decode(jsonStr string, v interface{}) {
+// Decode deserialize
+func Decode(jsonStr string, v any) {
 	_ = DecodeBytes([]byte(jsonStr), v)
 }
 
-//serialize
-func Encode(v interface{}) string {
+// Encode serialize
+func Encode(v any) string {
 	return string(EncodeBytes(v))
 }
 
-//deserialize
-func DecodeBytes(jsonBytes []byte, v interface{}) error {
+// DecodeBytes deserialize
+func DecodeBytes(jsonBytes []byte, v any) error {
 	return json.Unmarshal(jsonBytes, v)
 }
 
-//serialize
-func EncodeBytes(v interface{}) []byte {
+// EncodeBytes serialize
+func EncodeBytes(v any) []byte {
 	b, _ := json.Marshal(v)
 	return b
 }
+
+func DecodeJson5(filePath string, output any) error {
+	content, err := os.ReadFile(filePath)
+	if err == nil {
+		err = json.Unmarshal([]byte(commentReg.ReplaceAllString(string(content), "")), output)
+	}
+	return err
+}
+
+func Copy(src any, dest any) error {
+	return DecodeBytes(EncodeBytes(&src), &dest)
+}
+
+var commentReg = regexp.MustCompile("(//[^\\r\\n]*)")

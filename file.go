@@ -1,11 +1,15 @@
 package tools
 
 import (
+	"bufio"
+	"context"
+	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
-//remove file return false if failed.
+// DeleteFile remove file return false if failed.
 func DeleteFile(path string) bool {
 	err := os.Remove(path)
 	if err == nil || os.IsNotExist(err) {
@@ -15,7 +19,7 @@ func DeleteFile(path string) bool {
 	return false
 }
 
-//remove dirs and files in path return false if failed.
+// DeleteFiles remove dirs and files in path return false if failed.
 func DeleteFiles(path string) bool {
 	err := os.RemoveAll(path)
 	if err == nil {
@@ -24,13 +28,13 @@ func DeleteFiles(path string) bool {
 	return false
 }
 
-//return true if file exists.
+// FileExists return true if file exists.
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
 
-//create dir.
+// CreateDir create dir.
 func CreateDir(path string, mode os.FileMode) error {
 	err := os.MkdirAll(path, mode)
 	if err == nil {
@@ -39,7 +43,7 @@ func CreateDir(path string, mode os.FileMode) error {
 	return err
 }
 
-//create dir if not exists.
+// CreateDirIfNotExists create dir if not exists.
 func CreateDirIfNotExists(path string, mode os.FileMode) error {
 	if !FileExists(path) {
 		return CreateDir(path, mode)
@@ -47,7 +51,7 @@ func CreateDirIfNotExists(path string, mode os.FileMode) error {
 	return nil
 }
 
-//compute checksum of the input file.
+// FileCheckSum compute checksum of the input file.
 func FileCheckSum(file string) uint32 {
 	if f, err := os.Open(file); err != nil {
 		return 0
@@ -58,7 +62,7 @@ func FileCheckSum(file string) uint32 {
 	}
 }
 
-//compute checksum of input data.
+// CheckSum compute checksum of input data.
 func CheckSum(data []byte) uint32 {
 	r := uint32(0)
 	for _, b := range data {
@@ -136,4 +140,40 @@ var tbl = [256]uint32{0x00000000, 0x04C11DB7, 0x09823B6E, 0x0D4326D9,
 	0x9ABC8BD5, 0x9E7D9662, 0x933EB0BB, 0x97FFAD0C,
 	0xAFB010B1, 0xAB710D06, 0xA6322BDF, 0xA2F33668,
 	0xBCB4666D, 0xB8757BDA, 0xB5365D03, 0xB1F740B4,
+}
+
+func ReadFile(filename string, preRead int) (<-chan string, context.CancelFunc, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+	lines := make(chan string, preRead)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer func() {
+			_ = f.Close()
+			close(lines)
+			cancel()
+		}()
+		reader := bufio.NewReader(f)
+		var line string
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				line, err = reader.ReadString('\n')
+				if err == nil || err == io.EOF {
+					if line = strings.TrimSpace(line); line != "" {
+						lines <- line
+					}
+				}
+				if err != nil {
+					lines <- err.Error()
+					return
+				}
+			}
+		}
+	}()
+	return lines, cancel, nil
 }

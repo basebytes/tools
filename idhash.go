@@ -23,12 +23,12 @@ const (
 
 var UUIDRegexp = regexp.MustCompile(fmt.Sprintf("^[a-f0-9]{8}%c([a-f0-9]{4}%c){3}[a-f0-9]{12}$", uuidDash, uuidDash))
 
-//generate random hash uuid.
+// RandUUID generate random hash uuid.
 func RandUUID() string {
 	return uuid(randSum(16))
 }
 
-//generate hash uuid of the input data.
+// HashUUID generate hash uuid of the input data.
 func HashUUID(bs []byte) string {
 	return uuid(hashSum(AlgSha1, bs, 16))
 }
@@ -116,7 +116,7 @@ func randSum(size int) []byte {
 	return bs
 }
 
-//check if UUID is in valid format.
+// IsValidUUID check if UUID is in valid format.
 func IsValidUUID(UUID string) bool {
 	return UUIDRegexp.MatchString(UUID)
 }
