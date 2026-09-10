@@ -1,9 +1,12 @@
 package tools
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"regexp"
+
+	"github.com/basebytes/types"
 )
 
 // DecodeFile deserialize file content.
@@ -61,4 +64,35 @@ func Copy(src any, dest any) error {
 	return DecodeBytes(EncodeBytes(&src), &dest)
 }
 
-var commentReg = regexp.MustCompile("(//[^\\r\\n]*)")
+func TransJson(json *types.Json, result any) {
+	if json != nil {
+		_ = DecodeBytes(*json, result)
+	}
+}
+
+func IndentJson(value any, prefix, indent string) string {
+	var (
+		out  bytes.Buffer
+		b, _ = json.Marshal(value)
+	)
+	_ = json.Indent(&out, b, prefix, indent)
+	return out.String()
+}
+
+func ValidNumberList(v *types.Json) bool {
+	return v == nil || idListReg.Match(*v)
+}
+
+func ValidStringList(v *types.Json) bool {
+	return v == nil || stringListReg.Match(*v)
+}
+
+func ValidJson(v *types.Json) bool {
+	return v == nil || json.Valid(*v)
+}
+
+var (
+	commentReg    = regexp.MustCompile("(//[^\\r\\n]*)")
+	idListReg     = regexp.MustCompile(`^\[\]|\[\d+([ \n]*,[ \n]*\d+)*\]$`)
+	stringListReg = regexp.MustCompile(`^\[\]|\["(.+)"([ \n]*,[ \n]*".+")*\]$`)
+)

@@ -101,10 +101,10 @@ func DoRequest(method, rawUrl, uri string, params *url.Values, header *http.Head
 func ParseResponse(resp *http.Response, result any) (code int, err error) {
 	defer resp.Body.Close()
 	code = resp.StatusCode
-	var data []byte
+	var body []byte
 	if code == http.StatusOK {
-		if data, err = io.ReadAll(resp.Body); err == nil {
-			if err = json.Unmarshal(data, result); err != nil {
+		if body, err = io.ReadAll(resp.Body); err == nil {
+			if err = json.Unmarshal(body, result); err != nil {
 				err = fmt.Errorf("parse response body failed:%s", err)
 			}
 		} else {

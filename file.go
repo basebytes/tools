@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -52,14 +51,51 @@ func CreateDirIfNotExists(path string, mode os.FileMode) error {
 }
 
 // FileCheckSum compute checksum of the input file.
-func FileCheckSum(file string) uint32 {
-	if f, err := os.Open(file); err != nil {
-		return 0
-	} else if b, err := ioutil.ReadAll(f); err != nil {
-		return 0
-	} else {
-		return CheckSum(b)
+func FileCheckSum(file string) (r uint32) {
+	if f, err := os.Open(file); err == nil {
+		defer f.Close()
+		var bytes []byte
+		if bytes, err = io.ReadAll(f); err == nil {
+			CheckSum(bytes)
+		}
 	}
+	return
+}
+
+func ReadFile(filename string, preRead int) (<-chan string, context.CancelFunc, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+	lines := make(chan string, preRead)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer func() {
+			_ = f.Close()
+			close(lines)
+			cancel()
+		}()
+		reader := bufio.NewReader(f)
+		var line string
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				line, err = reader.ReadString('\n')
+				if err == nil || err == io.EOF {
+					if line = strings.TrimSpace(line); line != "" {
+						lines <- line
+					}
+				}
+				if err != nil {
+					lines <- err.Error()
+					return
+				}
+			}
+		}
+	}()
+	return lines, cancel, nil
 }
 
 // CheckSum compute checksum of input data.
@@ -140,40 +176,4 @@ var tbl = [256]uint32{0x00000000, 0x04C11DB7, 0x09823B6E, 0x0D4326D9,
 	0x9ABC8BD5, 0x9E7D9662, 0x933EB0BB, 0x97FFAD0C,
 	0xAFB010B1, 0xAB710D06, 0xA6322BDF, 0xA2F33668,
 	0xBCB4666D, 0xB8757BDA, 0xB5365D03, 0xB1F740B4,
-}
-
-func ReadFile(filename string, preRead int) (<-chan string, context.CancelFunc, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, nil, err
-	}
-	lines := make(chan string, preRead)
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		defer func() {
-			_ = f.Close()
-			close(lines)
-			cancel()
-		}()
-		reader := bufio.NewReader(f)
-		var line string
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				line, err = reader.ReadString('\n')
-				if err == nil || err == io.EOF {
-					if line = strings.TrimSpace(line); line != "" {
-						lines <- line
-					}
-				}
-				if err != nil {
-					lines <- err.Error()
-					return
-				}
-			}
-		}
-	}()
-	return lines, cancel, nil
 }
